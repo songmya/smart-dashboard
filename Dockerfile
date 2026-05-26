@@ -1,6 +1,6 @@
 FROM node:22-alpine
 
-RUN apk add --no-cache smartmontools tzdata
+RUN apk add --no-cache smartmontools util-linux bash tzdata
 
 WORKDIR /app
 COPY package.json ./
