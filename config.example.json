@@ -7,18 +7,58 @@
   },
   "scan": {
     "enabled": true,
-    "commandArgs": ["--scan-open"],
+    "commandArgs": [
+      "--scan-open"
+    ],
     "include": [],
     "exclude": []
   },
   "defaults": {
-    "args": ["-T", "permissive", "-a"]
+    "args": [
+      "-T",
+      "permissive",
+      "-a"
+    ]
   },
   "devices": [
     {
       "path": "/dev/sda",
-      "smartctlArgs": ["-T", "permissive", "-d", "sat", "-a"],
-      "transport": "sata"
+      "smartctlArgs": [
+        "-T",
+        "permissive",
+        "-d",
+        "sat",
+        "-a"
+      ],
+      "transport": "sata",
+      "type": "sat"
+    },
+    {
+      "path": "/dev/sdc",
+      "commands": [
+        [
+          "-T",
+          "permissive",
+          "-d",
+          "sat",
+          "-i"
+        ],
+        [
+          "-T",
+          "permissive",
+          "-d",
+          "sat",
+          "-H",
+          "-A",
+          "-l",
+          "error",
+          "-l",
+          "selftest"
+        ]
+      ],
+      "transport": "usb",
+      "type": "sat",
+      "note": "USB/SATA bridges may need one command for identity and one for SMART data."
     }
   ]
 }

@@ -181,12 +181,23 @@ async function main() {
   const rows = [];
   for (const dev of devices) {
     const devPath = dev.path;
-    const args = dev.smartctlArgs || [...(config.defaults?.args || ['-T','permissive','-a']), ...(dev.args || [])];
-    const r = sh([config.smartctl, ...args, devPath]);
-    const text = `${r.stdout || ''}${r.stderr ? `\n${r.stderr}` : ''}`;
+    const commandSets = Array.isArray(dev.commands) && dev.commands.length
+      ? dev.commands
+      : [dev.smartctlArgs || [...(config.defaults?.args || ['-T','permissive','-a']), ...(dev.args || [])]];
+    const outputs = [];
+    let rc = 0;
+    for (const args of commandSets) {
+      const r = sh([config.smartctl, ...args, devPath]);
+      rc = Math.max(rc, r.status ?? 0);
+      outputs.push(`$ ${config.smartctl} ${args.join(' ')} ${devPath}\n${r.stdout || ''}${r.stderr ? `\n${r.stderr}` : ''}`);
+    }
+    const text = outputs.join('\n\n');
     const rawFile = path.join(rawDir, `${runId}_${safeName(devPath)}.txt`);
     await fsp.writeFile(rawFile, text);
-    const p = parseSmart(text, devPath, r.status ?? 0);
+    const p = parseSmart(text, devPath, rc);
+    if ((!p.model || p.model === 'Unknown') && dev.model) p.model = dev.model;
+    if ((!p.serial || p.serial === 'Unknown') && dev.serial) p.serial = dev.serial;
+    if ((!p.capacity || p.capacity === 'Unknown') && dev.capacity) p.capacity = dev.capacity;
     const transport = dev.transport || (String(dev.args || '').includes('usb') || String(dev.args || '').includes('sat') ? 'usb' : 'auto');
     const row = [timestamp, runId, host, devPath, transport, dev.type || 'auto', p.model, p.serial, p.capacity, p.health, p.result,
       p.vals.temp_c, p.vals.power_on_hours, p.vals.reallocated_sectors, p.vals.pending_sectors, p.vals.offline_uncorrectable,
