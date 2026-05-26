@@ -1,0 +1,26 @@
+services:
+  smart-dashboard:
+    build: .
+    image: smart-dashboard:local
+    container_name: smart-dashboard
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./data:/data
+      - ./config:/config
+      - /dev:/dev
+      - /run/udev:/run/udev:ro
+    environment:
+      TZ: Asia/Shanghai
+      PORT: 8787
+      DATA_DIR: /data
+      CONFIG_FILE: /config/config.json
+      CSV_FILE: /data/disk-health-history.csv
+      CHECK_COMMAND: node /app/collector.js
+      DASHBOARD_TITLE: SMART 硬盘健康监控
+      # 启动时先采集一次：true / false
+      RUN_ON_START: "false"
+      # 可选：定时采集，cron 格式。例如每 8 小时一次：0 */8 * * *
+      # CRON_SCHEDULE: "0 */8 * * *"

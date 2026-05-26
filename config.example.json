@@ -1,0 +1,24 @@
+{
+  "smartctl": "/usr/sbin/smartctl",
+  "output": {
+    "dataDir": "/data",
+    "csv": "/data/disk-health-history.csv",
+    "rawDir": "/data/raw"
+  },
+  "scan": {
+    "enabled": true,
+    "commandArgs": ["--scan-open"],
+    "include": [],
+    "exclude": []
+  },
+  "defaults": {
+    "args": ["-T", "permissive", "-a"]
+  },
+  "devices": [
+    {
+      "path": "/dev/sda",
+      "smartctlArgs": ["-T", "permissive", "-d", "sat", "-a"],
+      "transport": "sata"
+    }
+  ]
+}

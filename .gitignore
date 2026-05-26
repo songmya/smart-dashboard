@@ -1,0 +1,20 @@
+# Runtime data
+/data/
+/raw/
+*.csv
+*.log
+*.pid
+
+# Local generated config
+/config/
+
+# Node / editor
+node_modules/
+.DS_Store
+.vscode/
+.idea/
+
+# Secrets
+.env
+*.secret
+*.token
