@@ -205,6 +205,12 @@ async function main() {
       p.vals.power_cycle_count, p.selftest, p.rc, p.notes, rawFile];
     rows.push(row);
     console.log(`${devPath}: ${p.result} ${p.model} temp=${p.vals.temp_c}C hours=${p.vals.power_on_hours} rc=${p.rc}`);
+    console.log(`  health=${p.health} serial=${p.serial} capacity=${p.capacity}`);
+    console.log(`  realloc=${p.vals.reallocated_sectors} pending=${p.vals.pending_sectors} offline_uncorrectable=${p.vals.offline_uncorrectable}`);
+    console.log(`  crc=${p.vals.udma_crc_errors} ata_errors=${p.vals.ata_error_count} command_timeout=${p.vals.command_timeout}`);
+    console.log(`  power_cycles=${p.vals.power_cycle_count} selftest=${p.selftest}`);
+    console.log(`  notes=${p.notes}`);
+    console.log(`  raw=${rawFile}`);
   }
   if (rows.length) await fsp.appendFile(csv, rows.map(r => r.map(csvEscape).join(',')).join('\n') + '\n');
   console.log(`Wrote ${rows.length} rows to ${csv}`);
