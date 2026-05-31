@@ -1,5 +1,7 @@
 # SMART Dashboard Docker Service
 
+[中文](README.md)
+
 A general-purpose SMART disk health collector and CSV-based trend dashboard.
 
 ## Features

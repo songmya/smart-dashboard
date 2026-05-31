@@ -1,5 +1,7 @@
 # SMART Dashboard Docker Service
 
+[English](README.en.md)
+
 一个通用的 SMART 硬盘健康采集 + CSV 趋势 WebUI 服务。
 
 ## 功能
