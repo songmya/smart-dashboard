@@ -10,7 +10,7 @@ const dictionaries = {
     themeDark: '暗黑', themeLight: '白天', disk: '硬盘', status: '状态', capacity: '容量', serial: '序列号', model: '型号',
     temp_c: '温度 °C', temperature: '温度', power_on_hours: '通电小时', reallocated_sectors: '重映射扇区', pending_sectors: '待映射扇区',
     offline_uncorrectable: '离线不可校正', udma_crc_errors: 'UDMA CRC 错误', ata_error_count: 'ATA 错误', command_timeout: '命令超时',
-    reported_uncorrect: '已报告不可校正', spin_retry_count: '主轴重试次数', power_cycle_count: '通电次数', smart_exit_code: 'smartctl 返回码'
+    reported_uncorrect: '已报告不可校正', spin_retry_count: '主轴重试次数', power_cycle_count: '通电次数', smart_exit_code: 'smartctl 返回码', collapseCheck: '收起', expandCheck: '展开', rawOutput: '原始输出', noCheckOutput: '暂无检测输出', checkSummary: '检测摘要', duration: '耗时'
   },
   en: {
     appTitle: 'SMART Disk Health Monitor', metric: 'Metric', language: 'Language', runCheck: 'Run check', running: 'Checking…', refresh: 'Refresh',
@@ -23,7 +23,7 @@ const dictionaries = {
     themeDark: 'Dark', themeLight: 'Light', disk: 'Disk', status: 'Status', capacity: 'Capacity', serial: 'Serial', model: 'Model',
     temp_c: 'Temperature °C', temperature: 'Temperature', power_on_hours: 'Power-on hours', reallocated_sectors: 'Reallocated sectors', pending_sectors: 'Pending sectors',
     offline_uncorrectable: 'Offline uncorrectable', udma_crc_errors: 'UDMA CRC errors', ata_error_count: 'ATA errors', command_timeout: 'Command timeout',
-    reported_uncorrect: 'Reported uncorrectable', spin_retry_count: 'Spin retry count', power_cycle_count: 'Power cycles', smart_exit_code: 'smartctl exit code'
+    reported_uncorrect: 'Reported uncorrectable', spin_retry_count: 'Spin retry count', power_cycle_count: 'Power cycles', smart_exit_code: 'smartctl exit code', collapseCheck: 'Collapse', expandCheck: 'Expand', rawOutput: 'Raw output', noCheckOutput: 'No check output yet', checkSummary: 'Check summary', duration: 'Duration'
   }
 };
 const colors = ['#7aa2ff','#45d483','#ffd166','#ff5d73','#b084ff','#4dd7fa','#ff9f43','#ff78c4','#8bd450','#f7768e'];
@@ -42,6 +42,46 @@ function timeKey() { return state?.timeField || 'timestamp'; }
 function tempKey() { return state?.metrics?.find(m => /^(temp|temperature|temp_c)$/i.test(m.key))?.key || 'temp_c'; }
 function hourKey() { return state?.metrics?.find(m => /power_on_hours|hours/i.test(m.key))?.key || 'power_on_hours'; }
 function tempSuffix(key) { return /temp|temperature/i.test(key) ? '°' : ''; }
+function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch])); }
+function formatDuration(start, end) {
+  const a = start ? Date.parse(start) : NaN;
+  const b = end ? Date.parse(end) : Date.now();
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b < a) return '—';
+  const total = Math.round((b - a) / 1000);
+  const min = Math.floor(total / 60);
+  const sec = total % 60;
+  return min ? `${min}m ${sec}s` : `${sec}s`;
+}
+function setCheckCollapsed(collapsed) {
+  const panel = document.getElementById('checkPanel');
+  const body = document.getElementById('checkBody');
+  const toggle = document.getElementById('checkToggle');
+  if (!panel || !body || !toggle) return;
+  panel.classList.toggle('collapsed', collapsed);
+  body.hidden = collapsed;
+  toggle.setAttribute('aria-expanded', String(!collapsed));
+  toggle.textContent = collapsed ? t('expandCheck') : t('collapseCheck');
+  localStorage.setItem('checkCollapsed', collapsed ? '1' : '0');
+}
+function renderPrettyLog(job) {
+  const wrap = document.getElementById('checkLogPretty');
+  if (!wrap) return;
+  const log = String(job?.log || '').trim();
+  const status = job?.running ? 'running' : job?.exitCode === 0 ? 'ok' : job?.startedAt ? 'fail' : 'idle';
+  const lines = log ? log.split(/\r?\n/).filter(Boolean) : [];
+  const important = lines.filter(line => /\b(FAIL|BAD|WARN|ERROR|critical|uncorrect|pending|reallocated|timeout|CRC|完成|失败|错误|警告)\b/i.test(line)).slice(-10);
+  const tail = lines.slice(-12);
+  const chips = [
+    `<span class="check-chip ${status}">${job?.running ? t('running') : job?.exitCode === 0 ? t('checkDone') : job?.startedAt ? t('checkFailed') : t('ready')}</span>`,
+    job?.startedAt ? `<span class="check-chip">${t('duration')}: ${formatDuration(job.startedAt, job.finishedAt)}</span>` : '',
+    job?.exitCode != null ? `<span class="check-chip">exit ${job.exitCode}</span>` : ''
+  ].filter(Boolean).join('');
+  const body = log ? `
+    ${important.length ? `<div class="check-section-title">${t('checkSummary')}</div><ul class="check-summary">${important.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul>` : ''}
+    <div class="check-section-title">${important.length ? t('latest') : t('rawOutput')}</div>
+    <div class="check-tail">${tail.map(line => `<div>${escapeHtml(line)}</div>`).join('')}</div>` : `<p class="empty">${t('noCheckOutput')}</p>`;
+  wrap.innerHTML = `<div class="check-chips">${chips}</div>${body}`;
+}
 
 function applyChrome() {
   document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
@@ -162,9 +202,10 @@ function updateCheckUi(job) {
   panel.hidden = false;
   btn.disabled = !!job.running;
   btn.textContent = job.running ? t('running') : t('runCheck');
-  if (job.running) stateEl.textContent = `${t('checkRunning')} ${time(job.startedAt)}`;
-  else if (job.exitCode === 0) stateEl.textContent = `${t('checkDone')} · ${time(job.finishedAt)}`;
+  if (job.running) stateEl.textContent = `${t('checkRunning')} ${time(job.startedAt)} · ${t('duration')} ${formatDuration(job.startedAt)}`;
+  else if (job.exitCode === 0) stateEl.textContent = `${t('checkDone')} · ${time(job.finishedAt)} · ${t('duration')} ${formatDuration(job.startedAt, job.finishedAt)}`;
   else stateEl.textContent = `${t('checkFailed')} exit=${job.exitCode ?? 'unknown'} · ${job.error || ''}`;
+  renderPrettyLog(job);
   if (job.log) { logEl.textContent = job.log; logEl.scrollTop = logEl.scrollHeight; }
 }
 
@@ -182,6 +223,7 @@ async function runCheck() {
   btn.textContent = t('running');
   document.getElementById('checkPanel').hidden = false;
   document.getElementById('checkLog').textContent = '';
+  renderPrettyLog({ running: true, startedAt: new Date().toISOString(), log: '' });
   document.getElementById('checkState').textContent = t('startCheck');
   try {
     const res = await fetch('/api/check', { method:'POST' });
@@ -199,6 +241,10 @@ async function runCheck() {
 document.getElementById('metric').addEventListener('change', renderChart);
 document.getElementById('refresh').addEventListener('click', load);
 document.getElementById('runCheck').addEventListener('click', runCheck);
+document.getElementById('checkToggle').addEventListener('click', () => {
+  setCheckCollapsed(!document.getElementById('checkPanel').classList.contains('collapsed'));
+});
+setCheckCollapsed(localStorage.getItem('checkCollapsed') === '1');
 document.getElementById('language').addEventListener('change', e => { lang = e.target.value; localStorage.setItem('lang', lang); render(); });
 document.getElementById('themeToggle').addEventListener('click', () => { theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('theme', theme); render(); });
 

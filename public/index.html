@@ -34,11 +34,20 @@
     <section id="cards" class="cards"></section>
 
     <section class="panel check-panel" id="checkPanel" hidden>
-      <div class="panel-head">
-        <h2 data-i18n="checkTitle">Disk check</h2>
-        <span id="checkState" class="hint">Ready</span>
+      <div class="panel-head check-head">
+        <div>
+          <h2 data-i18n="checkTitle">Disk check</h2>
+          <span id="checkState" class="hint">Ready</span>
+        </div>
+        <button id="checkToggle" class="ghost small-btn" type="button" aria-expanded="true" data-i18n="collapseCheck">Collapse</button>
       </div>
-      <pre id="checkLog"></pre>
+      <div id="checkBody" class="check-body">
+        <div id="checkLogPretty" class="check-log-pretty"></div>
+        <details class="raw-log">
+          <summary data-i18n="rawOutput">Raw output</summary>
+          <pre id="checkLog"></pre>
+        </details>
+      </div>
     </section>
 
     <section class="panel">
