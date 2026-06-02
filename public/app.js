@@ -69,17 +69,16 @@ function renderPrettyLog(job) {
   const log = String(job?.log || '').trim();
   const status = job?.running ? 'running' : job?.exitCode === 0 ? 'ok' : job?.startedAt ? 'fail' : 'idle';
   const lines = log ? log.split(/\r?\n/).filter(Boolean) : [];
-  const important = lines.filter(line => /\b(FAIL|BAD|WARN|ERROR|critical|uncorrect|pending|reallocated|timeout|CRC|完成|失败|错误|警告)\b/i.test(line)).slice(-10);
-  const tail = lines.slice(-12);
+  const important = lines.filter(line => /\b(FAIL|BAD|WARN|ERROR|critical|uncorrect|pending|reallocated|timeout|CRC|完成|失败|错误|警告|Exception)\b/i.test(line)).slice(-10);
+  const tail = lines.slice(-3);
   const chips = [
     `<span class="check-chip ${status}">${job?.running ? t('running') : job?.exitCode === 0 ? t('checkDone') : job?.startedAt ? t('checkFailed') : t('ready')}</span>`,
     job?.startedAt ? `<span class="check-chip">${t('duration')}: ${formatDuration(job.startedAt, job.finishedAt)}</span>` : '',
     job?.exitCode != null ? `<span class="check-chip">exit ${job.exitCode}</span>` : ''
   ].filter(Boolean).join('');
   const body = log ? `
-    ${important.length ? `<div class="check-section-title">${t('checkSummary')}</div><ul class="check-summary">${important.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul>` : ''}
-    <div class="check-section-title">${important.length ? t('latest') : t('rawOutput')}</div>
-    <div class="check-tail">${tail.map(line => `<div>${escapeHtml(line)}</div>`).join('')}</div>` : `<p class="empty">${t('noCheckOutput')}</p>`;
+    ${important.length ? `<div class="check-section-title">${t('checkSummary')}</div><ul class="check-summary">${important.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul>` : `<div class="check-success">✅ ${t('noRisk')}</div>`}
+    ` : `<p class="empty">${t('noCheckOutput')}</p>`;
   wrap.innerHTML = `<div class="check-chips">${chips}</div>${body}`;
 }
 
