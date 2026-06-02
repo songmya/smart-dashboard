@@ -34,13 +34,13 @@
     <section id="cards" class="cards"></section>
 
     <section class="panel check-panel" id="checkPanel" hidden>
-      <button id="checkHeader" class="check-header" type="button" aria-controls="checkBody" aria-expanded="true">
+      <div id="checkHeader" class="check-header" role="button" tabindex="0" aria-controls="checkBody" aria-expanded="true">
         <div>
           <h2 data-i18n="checkTitle">Disk check</h2>
           <span id="checkState" class="hint">Ready</span>
         </div>
-        <span id="checkToggle" class="ghost small-btn">Collapse</span>
-      </button>
+        <button id="checkToggle" class="ghost small-btn" type="button">Collapse</button>
+      </div>
       <div id="checkBody" class="check-body">
         <div id="checkLogPretty" class="check-log-pretty"></div>
         <details class="raw-log">

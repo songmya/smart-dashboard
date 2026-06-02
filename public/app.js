@@ -242,8 +242,19 @@ async function runCheck() {
 document.getElementById('metric').addEventListener('change', renderChart);
 document.getElementById('refresh').addEventListener('click', load);
 document.getElementById('runCheck').addEventListener('click', runCheck);
-document.getElementById('checkHeader').addEventListener('click', () => {
+function toggleCheckPanel() {
   setCheckCollapsed(!document.getElementById('checkPanel').classList.contains('collapsed'));
+}
+document.getElementById('checkHeader').addEventListener('click', toggleCheckPanel);
+document.getElementById('checkHeader').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    toggleCheckPanel();
+  }
+});
+document.getElementById('checkToggle').addEventListener('click', e => {
+  e.stopPropagation();
+  toggleCheckPanel();
 });
 setCheckCollapsed(localStorage.getItem('checkCollapsed') === '1');
 document.getElementById('language').addEventListener('change', e => { lang = e.target.value; localStorage.setItem('lang', lang); render(); });
