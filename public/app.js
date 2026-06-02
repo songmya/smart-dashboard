@@ -55,11 +55,12 @@ function formatDuration(start, end) {
 function setCheckCollapsed(collapsed) {
   const panel = document.getElementById('checkPanel');
   const body = document.getElementById('checkBody');
+  const header = document.getElementById('checkHeader');
   const toggle = document.getElementById('checkToggle');
-  if (!panel || !body || !toggle) return;
+  if (!panel || !body || !header || !toggle) return;
   panel.classList.toggle('collapsed', collapsed);
   body.hidden = collapsed;
-  toggle.setAttribute('aria-expanded', String(!collapsed));
+  header.setAttribute('aria-expanded', String(!collapsed));
   toggle.textContent = collapsed ? t('expandCheck') : t('collapseCheck');
   localStorage.setItem('checkCollapsed', collapsed ? '1' : '0');
 }
@@ -70,7 +71,6 @@ function renderPrettyLog(job) {
   const status = job?.running ? 'running' : job?.exitCode === 0 ? 'ok' : job?.startedAt ? 'fail' : 'idle';
   const lines = log ? log.split(/\r?\n/).filter(Boolean) : [];
   const important = lines.filter(line => /\b(FAIL|BAD|WARN|ERROR|critical|uncorrect|pending|reallocated|timeout|CRC|完成|失败|错误|警告|Exception)\b/i.test(line)).slice(-10);
-  const tail = lines.slice(-3);
   const chips = [
     `<span class="check-chip ${status}">${job?.running ? t('running') : job?.exitCode === 0 ? t('checkDone') : job?.startedAt ? t('checkFailed') : t('ready')}</span>`,
     job?.startedAt ? `<span class="check-chip">${t('duration')}: ${formatDuration(job.startedAt, job.finishedAt)}</span>` : '',
@@ -88,6 +88,8 @@ function applyChrome() {
   document.getElementById('language').value = lang;
   document.getElementById('themeToggle').textContent = theme === 'dark' ? t('themeDark') : t('themeLight');
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  const panel = document.getElementById('checkPanel');
+  if (panel) setCheckCollapsed(panel.classList.contains('collapsed'));
   if (!state) document.getElementById('status').textContent = t('connecting');
 }
 
@@ -240,7 +242,7 @@ async function runCheck() {
 document.getElementById('metric').addEventListener('change', renderChart);
 document.getElementById('refresh').addEventListener('click', load);
 document.getElementById('runCheck').addEventListener('click', runCheck);
-document.getElementById('checkToggle').addEventListener('click', () => {
+document.getElementById('checkHeader').addEventListener('click', () => {
   setCheckCollapsed(!document.getElementById('checkPanel').classList.contains('collapsed'));
 });
 setCheckCollapsed(localStorage.getItem('checkCollapsed') === '1');

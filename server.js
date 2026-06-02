@@ -247,7 +247,12 @@ const server = http.createServer(async (req, res) => {
     if (!file.startsWith(PUBLIC)) { res.writeHead(403); return res.end('Forbidden'); }
     const ext = path.extname(file).toLowerCase();
     const type = ext === '.html' ? 'text/html; charset=utf-8' : ext === '.js' ? 'application/javascript; charset=utf-8' : ext === '.css' ? 'text/css; charset=utf-8' : 'application/octet-stream';
-    res.writeHead(200, { 'content-type': type });
+    res.writeHead(200, {
+      'content-type': type,
+      'cache-control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      pragma: 'no-cache',
+      expires: '0'
+    });
     fs.createReadStream(file).on('error', () => { if (!res.headersSent) res.writeHead(404); res.end('Not found'); }).pipe(res);
   } catch (e) {
     console.error(e);
