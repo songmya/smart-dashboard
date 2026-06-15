@@ -145,7 +145,7 @@ function renderChart() {
   }
   const datasets = [...byGroup.entries()].map(([name, data], i) => ({
     label: name, data: data.sort((a, b) => a.x - b.x), borderColor: colors[i % colors.length], backgroundColor: colors[i % colors.length],
-    borderWidth: 3, tension: .42, cubicInterpolationMode: 'monotone', pointRadius: 2.5, pointHoverRadius: 6, spanGaps: true
+    borderWidth: 3, tension: .42, pointRadius: 2.5, pointHoverRadius: 6, spanGaps: true
   }));
   if (chart) chart.destroy();
   const c = chartColors();

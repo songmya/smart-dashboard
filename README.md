@@ -163,6 +163,18 @@ GET  /api/events
 | `RUN_ON_START` | `false` | 容器启动后是否采集一次 |
 | `CRON_SCHEDULE` | 空 | cron 定时采集表达式 |
 
+## 自检百分比说明
+
+`selftest` 行里的百分比来自 `smartctl` 自检日志的 `Remaining` 字段，表示**剩余百分比**，不是当前进度。
+
+例如：
+
+```text
+Extended offline    Aborted by host    90%
+```
+
+意思是上一次扩展自检被主机中止时还剩 90%，约等于只完成了 10%。这通常不是页面卡住，而是硬盘保存的上一条 SMART 自检历史。
+
 ## 从旧数据迁移
 
 如果你已有旧 CSV：

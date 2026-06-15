@@ -87,6 +87,16 @@ function latestSelftest(text) {
   if (!line) return 'Unknown';
   return line.replace(/^#\s*1\s+/, '').trim();
 }
+function formatSelftest(selftest) {
+  const raw = String(selftest || '').trim();
+  if (!raw || raw === 'Unknown') return 'Unknown';
+  const m = raw.match(/^(.*?)\s+(\d{1,3})%\s+(\d+)\s+(.*)$/);
+  if (!m) return raw;
+  const [, status, remaining, lifetime, lba] = m;
+  const done = Math.max(0, Math.min(100, 100 - Number(remaining)));
+  const suffix = lba && lba !== '-' ? ` failing_lba=${lba}` : '';
+  return `${status.trim()} (remaining=${remaining}%, approx_done=${done}%, lifetime=${lifetime}h${suffix})`;
+}
 function numish(v) { return v && v !== 'Unknown' && /^-?\d+$/.test(String(v)) ? Number(v) : null; }
 
 function classify(health, vals) {
@@ -208,7 +218,7 @@ async function main() {
     console.log(`  health=${p.health} serial=${p.serial} capacity=${p.capacity}`);
     console.log(`  realloc=${p.vals.reallocated_sectors} pending=${p.vals.pending_sectors} offline_uncorrectable=${p.vals.offline_uncorrectable}`);
     console.log(`  crc=${p.vals.udma_crc_errors} ata_errors=${p.vals.ata_error_count} command_timeout=${p.vals.command_timeout}`);
-    console.log(`  power_cycles=${p.vals.power_cycle_count} selftest=${p.selftest}`);
+    console.log(`  power_cycles=${p.vals.power_cycle_count} selftest=${formatSelftest(p.selftest)}`);
     console.log(`  notes=${p.notes}`);
     console.log(`  raw=${rawFile}`);
   }
