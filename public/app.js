@@ -27,7 +27,7 @@ const dictionaries = {
   }
 };
 const colors = ['#7aa2ff','#45d483','#ffd166','#ff5d73','#b084ff','#4dd7fa','#ff9f43','#ff78c4','#8bd450','#f7768e'];
-let state = null, chart = null;
+let state = null, chart = null, chartRangeDays = 0;
 let lang = localStorage.getItem('lang') || ((navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en');
 let theme = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
 
@@ -133,19 +133,55 @@ function chartColors() {
   return { text: css.getPropertyValue('--text').trim(), muted: css.getPropertyValue('--muted').trim(), line: css.getPropertyValue('--line').trim() };
 }
 
+function downsample(data, maxPoints) {
+  if (data.length <= maxPoints) return data;
+  const result = [];
+  const bucketSize = (data.length - 2) / (maxPoints - 2);
+  result.push(data[0]);
+  for (let i = 1; i < maxPoints - 1; i++) {
+    const start = Math.floor(i * bucketSize);
+    const end = Math.floor((i + 1) * bucketSize);
+    let maxY = -Infinity, best = data[start];
+    for (let j = start; j < end && j < data.length; j++) {
+      if (data[j].y > maxY) { maxY = data[j].y; best = data[j]; }
+    }
+    result.push(best);
+  }
+  result.push(data[data.length - 1]);
+  return result;
+}
+
 function renderChart() {
   const metric = document.getElementById('metric').value;
   document.getElementById('chartTitle').textContent = `${metricLabel(metric)} ${t('trend')}`;
+  const now = Date.now();
+  const cutoff = chartRangeDays > 0 ? now - chartRangeDays * 86400000 : 0;
   const byGroup = new Map();
   for (const r of state.records || []) {
     const g = r[groupKey()];
     if (!g) continue;
     if (!byGroup.has(g)) byGroup.set(g, []);
-    if (r[metric] !== null && r[metric] !== undefined && r.ts) byGroup.get(g).push({ x: r.ts, y: r[metric] });
+    if (r[metric] !== null && r[metric] !== undefined && r.ts) {
+      if (cutoff === 0 || r.ts >= cutoff) byGroup.get(g).push({ x: r.ts, y: r[metric] });
+    }
   }
+  // 动态计算合适的 tick 数和时间格式
+  let allTs = [];
+  byGroup.forEach(pts => pts.forEach(p => allTs.push(p.x)));
+  const minTs = allTs.length ? Math.min(...allTs) : 0;
+  const maxTs = allTs.length ? Math.max(...allTs) : 0;
+  const spanDays = (maxTs - minTs) / 86400000;
+  const maxPoints = 200; // 每条线最多200个点
+  function fmtTick(value) {
+    const d = new Date(value);
+    if (spanDays > 60) return d.toLocaleDateString([], { month: '2-digit', day: '2-digit' });
+    if (spanDays > 7) return d.toLocaleDateString([], { month: '2-digit', day: '2-digit' });
+    return d.toLocaleString([], { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+  const tickLimit = spanDays > 60 ? 10 : spanDays > 14 ? 10 : 8;
   const datasets = [...byGroup.entries()].map(([name, data], i) => ({
-    label: name, data: data.sort((a, b) => a.x - b.x), borderColor: colors[i % colors.length], backgroundColor: colors[i % colors.length],
-    borderWidth: 3, tension: .42, pointRadius: 2.5, pointHoverRadius: 6, spanGaps: true
+    label: name, data: downsample(data.sort((a, b) => a.x - b.x), maxPoints), borderColor: colors[i % colors.length], backgroundColor: colors[i % colors.length],
+    borderWidth: 2, tension: .3, pointRadius: 2, pointHoverRadius: 6, spanGaps: true
   }));
   if (chart) chart.destroy();
   const c = chartColors();
@@ -154,7 +190,7 @@ function renderChart() {
     options: {
       responsive:true, maintainAspectRatio:false, parsing:false,
       scales:{
-        x:{ type:'linear', title:{ display:true, text:t('time'), color:c.muted }, ticks:{ color:c.muted, maxTicksLimit: 8, callback(value){ return fmtTimeValue(value); } }, grid:{ color:c.line } },
+        x:{ type:'linear', title:{ display:true, text:t('time'), color:c.muted }, ticks:{ color:c.muted, maxTicksLimit: tickLimit, maxRotation: 0, autoSkip: true, callback(value){ return fmtTick(value); } }, grid:{ color:c.line } },
         y:{ title:{ display:true, text:metricLabel(metric), color:c.muted }, ticks:{ color:c.muted }, grid:{ color:c.line } }
       },
       plugins:{ legend:{ labels:{ color:c.text, usePointStyle:true } }, tooltip:{ mode:'nearest', intersect:false, callbacks:{ title(items){ return items[0] ? new Date(items[0].parsed.x).toLocaleString() : ''; } } } }
@@ -242,6 +278,13 @@ async function runCheck() {
 document.getElementById('metric').addEventListener('change', renderChart);
 document.getElementById('refresh').addEventListener('click', load);
 document.getElementById('runCheck').addEventListener('click', runCheck);
+document.getElementById('timeRangeBtns').addEventListener('click', e => {
+  const btn = e.target.closest('.range-btn');
+  if (!btn) return;
+  chartRangeDays = parseInt(btn.dataset.range, 10) || 0;
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.toggle('active', b === btn));
+  renderChart();
+});
 function toggleCheckPanel() {
   setCheckCollapsed(!document.getElementById('checkPanel').classList.contains('collapsed'));
 }

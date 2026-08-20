@@ -55,6 +55,14 @@
         <h2 id="chartTitle">Trend</h2>
         <span class="hint" data-i18n="autoRefreshHint">New CSV writes refresh automatically by SSE; polling is used as fallback.</span>
       </div>
+      <div class="chart-toolbar">
+        <div class="time-range-btns" id="timeRangeBtns">
+          <button class="range-btn" data-range="7" type="button">7天</button>
+          <button class="range-btn" data-range="14" type="button">14天</button>
+          <button class="range-btn" data-range="30" type="button">30天</button>
+          <button class="range-btn active" data-range="0" type="button">全部</button>
+        </div>
+      </div>
       <div class="chart-wrap"><canvas id="trend"></canvas></div>
     </section>
 
@@ -70,6 +78,6 @@
     </section>
   </main>
 
-  <script src="/app.js?v=20260603-ui-fix"></script>
+  <script src="/app.js?v=20260820-chart-fix"></script>
 </body>
 </html>
